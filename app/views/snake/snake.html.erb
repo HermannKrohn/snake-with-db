@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Snake</title>
+    </head>
+    <body>
+        <div>
+            <h1 id="curr-round-score">Your Score: 0</h1>
+            <h3 id"curr-player-high-score">Your highest score:</h3>
+            <h3 id"highest-score">World Record:</h3>
+        </div>
+        <div>
+            <canvas id="gameCanvas" width="400" height="400"></canvas>
+        </div>
+        <script>
+                // Initializing varibles
+                var canvas;
+                var canvasContext;
+                var snakeX = snakeY = 10;
+                var appleX = appleY = 15;
+                var xVelocity = yVelocity = 0;
+                trail = [];
+                var tail = 5;
+                var gridSize = tileCount = 20;
+                var roundScore = 0;
+                currScore = document.getElementById("curr-round-score");
+                currHighScore = document.getElementById("curr-player-high-score");
+                worldRecord = document.getElementById("highest-score");
+
+                // Starts game
+                window.onload=function() {
+                    canvas=document.getElementById("gameCanvas");
+                    canvasContext=canvas.getContext("2d");
+                    document.addEventListener("keydown", keyPush);
+                    setInterval(game,1000/15);
+                }
+            
+                // Game calulations and graphics
+                function game() {
+                    // Snake location calulations
+                    snakeMovementCalculation();
+
+                    // Draw background and snake
+                    draw();
+                        
+                    // Shift snake to next location
+                    shiftSnake();
+
+                    // Check apple collision
+                    checkAppleCollision();
+                }
+
+                function initialScoreBoard(){
+                    currScore.innerHTML = "Your Score: " + roundScore;
+                    //when this fill is called need info about about high scores...after fetch re-direct to game to update scores
+                }
+
+                function snakeMovementCalculation(){
+                    snakeX+=xVelocity;
+                    snakeY+=yVelocity;
+                    if(snakeX<0) {
+                        snakeX= tileCount-1;
+                    }
+                    if(snakeX>tileCount-1) {
+                        snakeX= 0;
+                    }
+                    if(snakeY<0) {
+                        snakeY= tileCount-1;
+                    }
+                    if(snakeY>tileCount-1) {
+                        snakeY= 0;
+                    }
+                }
+
+                function draw(){
+                    // Draw background
+                    canvasContext.fillStyle="black";
+                    canvasContext.fillRect(0,0,canvas.width,canvas.height);
+
+                    // Draw snake
+                    canvasContext.fillStyle="lime";
+                    for(var i=0;i<trail.length;i++) {
+                        canvasContext.fillRect(trail[i].x*gridSize,trail[i].y*gridSize,gridSize-2,gridSize-2);
+                        if(xVelocity != 0 || yVelocity != 0){
+                            console.log("checking for collision");
+                            if(trail[i].x==snakeX && trail[i].y==snakeY) {
+                                //Collision
+                                fetch("http://localhost:3000/<%= @user_id[:id]%>/player-score", {
+                                    method: "POST",
+                                    headers: {
+                                        'Content-Type': 'application/json'
+                                    },
+                                    body: JSON.stringify({
+                                        score: roundScore
+                                    })
+                                });
+                                snakeX = snakeY = 10;
+                                appleX = appleY = 15;
+                                xVelocity = yVelocity = 0;
+                                trail = [];
+                                tail = 5;
+                                roundScore = 0;
+                                currScore.innerHTML = "Your Score: " + roundScore;
+                            }
+                        }
+                    }
+                }
+
+                function shiftSnake(){
+                    // Insert new snake head position to array
+                    trail.push({x:snakeX,y:snakeY});
+                    // Remove snake tail from array
+                    while(trail.length>tail) {
+                        trail.shift();
+                    }
+                }
+
+                function checkAppleCollision(){
+                    if(appleX==snakeX && appleY==snakeY) {
+                        tail++;
+                        roundScore++;
+                        currScore.innerHTML = "Your Score: " + roundScore;
+                        appleX=Math.floor(Math.random()*tileCount);
+                        appleY=Math.floor(Math.random()*tileCount);
+                    }
+                    canvasContext.fillStyle="red";
+                    canvasContext.fillRect(appleX*gridSize,appleY*gridSize,gridSize-2,gridSize-2);
+                }
+
+                // Key press function
+                function keyPush(evt) {
+                    switch(evt.keyCode) {
+                        case 37:
+                            xVelocity=-1;
+                            yVelocity=0;                        
+                            break;
+                        case 38:
+                            xVelocity=0;
+                            yVelocity=-1;
+                            break;
+                        case 39:
+                            xVelocity=1;
+                            yVelocity=0;
+                            break;
+                        case 40:
+                            xVelocity=0;
+                            yVelocity=1;
+                            break;
+                    }
+                }
+            </script>
+    </body>
+</html>
